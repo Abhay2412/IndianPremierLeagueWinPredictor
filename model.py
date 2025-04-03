@@ -19,3 +19,26 @@ class CricketWinPredictor(torch.nn.Module):
         self.fc1 = torch.nn.Linear(embedDim * 2, hiddenDim)
         self.relu = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(hiddenDim, 1) # This is the single output for binary classification 
+    def forward(self, expectedShape): # Basically we are defining how the input data will flow through the model 
+        # expected shape of the teams we are going to do which will be 2 teams 
+        firstTeam = expectedShape[:, 0].long() # Each row contains two integers representing the indices of the two teams
+        secondTeam = expectedShape[:, 1].long()
+        embedded1 = self.embedding(firstTeam)
+        embedded2 = self.embedding(secondTeam)
+        expectedShapeConcat = torch.cat([embedded1, embedded2], dim=1) # Concatenates the two embeddings along the feature dimension.
+        expectedShapeHidden = self.fc1(expectedShapeConcat) # Applies the ReLU activation function to the hidden layer output.
+        expectedShapeAct = self.relu(expectedShapeHidden)
+        resultProbability = self.fc2(expectedShapeAct)
+        return resultProbability
+
+def preprocessData(dfMatches: pandas.DataFrame):
+    """Helps with preprocessing the data 
+    Going to drop the matches with no result and maps the team names to numeric codes
+    Will also make 1 if the first team wins otherwise 0 like a binary
+
+    Parameters
+    ----------
+    dfMatches : pandas.DataFrame
+        All of the matches 
+    """
+    dfMatches = dfMatches.dropna(subset=['winner'])
